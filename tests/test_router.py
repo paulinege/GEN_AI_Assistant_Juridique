@@ -1,5 +1,8 @@
-from src.agents.router import route_query
+from src.agents.router import route_query, extract_city
 
+def test_extract_city_paris():
+    city = extract_city("Quelle est la météo à Paris ?")
+    assert city.lower() == "paris"
 
 def test_router_weather():
     result = route_query("Quelle est la météo à Paris ?")

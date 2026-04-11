@@ -1,4 +1,4 @@
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from src.config.setting import settings
 from src.schemas.tool_outputs import build_tool_response
 
@@ -10,7 +10,9 @@ def search_web(query: str):
 
         results = []
         with DDGS() as ddgs:
-            for r in ddgs.text(query, max_results=settings.WEB_SEARCH_MAX_RESULTS):
+            search_results = ddgs.text(query, max_results=settings.WEB_SEARCH_MAX_RESULTS)
+
+            for r in search_results:
                 results.append(
                     {
                         "title": r.get("title"),

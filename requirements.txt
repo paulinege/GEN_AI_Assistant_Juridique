@@ -19,7 +19,7 @@ chainlit>=1.0.0
 
 # Recherche web (outil agent)
 tavily-python>=0.3.0
-duckduckgo-search>=6.0.0
+ddgs>=6.0.0
 
 # Utilitaires
 python-dotenv>=1.0.0
