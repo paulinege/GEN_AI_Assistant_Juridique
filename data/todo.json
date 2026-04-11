@@ -1,0 +1,14 @@
+[
+  {
+    "date": "2026-04-12",
+    "task": "Tester l'outil météo"
+  },
+  {
+    "date": "2026-04-12",
+    "task": "Vérifier le routeur agent"
+  },
+  {
+    "date": "2026-04-13",
+    "task": "Préparer l'intégration avec le RAG"
+  }
+]
