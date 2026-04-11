@@ -6,9 +6,21 @@ from src.tools.todo_reader import read_todos
 
 
 def extract_city(query: str) -> str:
-    match = re.search(r"(?:à|a)\s+([A-Za-zÀ-ÿ\-]+)", query, re.IGNORECASE)
-    return match.group(1) if match else "Paris"
+    patterns = [
+        r"météo à\s+([A-Za-zÀ-ÿ\- ]+)",
+        r"meteo à\s+([A-Za-zÀ-ÿ\- ]+)",
+        r"température à\s+([A-Za-zÀ-ÿ\- ]+)",
+        r"temperature à\s+([A-Za-zÀ-ÿ\- ]+)",
+        r"à\s+([A-Za-zÀ-ÿ\- ]+)$",
+    ]
 
+    for pattern in patterns:
+        match = re.search(pattern, query, re.IGNORECASE)
+        if match:
+            city = match.group(1).strip(" ?!.,;:")
+            return city
+
+    return "Paris"
 
 def extract_date(query: str) -> str | None:
     match = re.search(r"\d{4}-\d{2}-\d{2}", query)
