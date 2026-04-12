@@ -1,24 +1,13 @@
-from src.agents.router import route_query, extract_city
-
-def test_extract_city_paris():
-    city = extract_city("Quelle est la météo à Paris ?")
-    assert city.lower() == "paris"
-
-def test_router_weather():
-    result = route_query("Quelle est la météo à Paris ?")
-    assert result["tool_name"] == "weather"
+from src.router import classify_query
 
 
-def test_router_todo():
-    result = route_query("Montre mes tâches pour 2026-04-12")
-    assert result["tool_name"] == "todo_reader"
+def test_classify_query_rag():
+    assert classify_query("Selon le PDF du code civil, que dit l'article 1240 ?") == "rag"
 
 
-def test_router_web_search():
-    result = route_query("Cherche sur le web les dernières infos sur le télétravail")
-    assert result["tool_name"] == "web_search"
+def test_classify_query_tool():
+    assert classify_query("Quel temps fait-il à Marseille aujourd'hui ?") == "tool"
 
 
-def test_router_calculator():
-    result = route_query("2 + 2")
-    assert result["tool_name"] == "calculator"
+def test_classify_query_chat():
+    assert classify_query("Bonjour maître") == "chat"
