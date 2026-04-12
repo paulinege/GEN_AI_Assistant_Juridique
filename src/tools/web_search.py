@@ -10,7 +10,10 @@ def search_web(query: str):
 
         results = []
         with DDGS() as ddgs:
-            search_results = ddgs.text(query, max_results=settings.WEB_SEARCH_MAX_RESULTS)
+            search_results = ddgs.text(
+                query,
+                max_results=settings.WEB_SEARCH_MAX_RESULTS,
+            )
 
             for r in search_results:
                 results.append(

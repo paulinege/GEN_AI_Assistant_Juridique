@@ -14,7 +14,6 @@ def calculate(a: float, b: float, op: str):
     try:
         if op not in ALLOWED_OPERATORS:
             raise ValueError(f"Unsupported operator: {op}")
-
         if op == "/" and b == 0:
             raise ValueError("Division by zero is not allowed")
 

@@ -19,11 +19,12 @@ chainlit>=1.0.0
 
 # Recherche web (outil agent)
 tavily-python>=0.3.0
-ddgs>=6.0.0
 
 # Utilitaires
 python-dotenv>=1.0.0
 numpy>=1.24.0
+ddgs>=6.0.0
+requests>=2.31.0
 
 # Tests
 pytest>=8.0.0
