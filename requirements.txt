@@ -1,0 +1,17 @@
+# --- Framework Agent & LLM ---
+langchain
+langchain-openai
+langchain-community
+
+# --- Interface & Serveur ---
+chainlit
+
+# --- Base de données vectorielle & RAG ---
+chromadb
+pypdf
+tiktoken
+
+# --- Utilitaires pour les outils ---
+requests
+tavily-python
+python-dotenv
