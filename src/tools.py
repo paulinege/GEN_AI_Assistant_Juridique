@@ -1,3 +1,4 @@
+from src.rag_pipeline import ask_rag, retriever_instance
 from __future__ import annotations
 
 import json
@@ -133,6 +134,12 @@ def todo_dossier_local(action: str, item: str = "") -> str:
 
 def build_tools():
     return [
+        StructuredTool.from_function(
+            func=lambda q: ask_rag(q, retriever_instance),
+            name="recherche_documents_internes",
+            description="RECHERCHE PRIORITAIRE. Utilise cet outil pour répondre aux questions sur le droit du travail en consultant les documents internes (Code du Travail).",
+            args_schema=WebSearchInput, # On réutilise WebSearchInput car il prend une 'question' en entrée
+        ),
         StructuredTool.from_function(
             func=calculatrice_juridique,
             name="calculatrice_juridique",
