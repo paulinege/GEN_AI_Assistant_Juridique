@@ -67,3 +67,7 @@ Extraits du Code du Travail :
     context = "\n\n".join([d.page_content for d in docs])
     chain = prompt | llm | StrOutputParser()
     return chain.invoke({"context": context, "question": question})
+
+vectorstore_instance = load_vectorstore()
+
+retriever_instance = get_retriever(vectorstore_instance)
