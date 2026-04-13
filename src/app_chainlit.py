@@ -11,12 +11,16 @@ async def on_chat_start():
 
     await cl.Message(
         content=(
-            "**Assistant Juridique — Code du Travail**\n\n"
-            "Bonjour ! Je suis votre assistant spécialisé en droit du travail français.\n\n"
-            "Je peux vous aider à :\n"
-            "- Répondre à des questions sur le Code du Travail\n"
-            "- Calculer des indemnités, préavis...\n"
-            "- Rechercher des informations récentes\n\n"
+            "Assistant Juridique — Code du Travail\n\n"
+            "Bonjour ! Je suis votre assistant specialise en droit du travail francais.\n\n"
+            "Je peux vous aider a :\n"
+            "- Repondre a des questions sur le Code du Travail\n"
+            "- Calculer des indemnites, preavis...\n"
+            "- Rechercher des informations recentes\n\n"
+            "Exemples de questions :\n"
+            "- Quel est le delai de preavis pour un CDI ?\n"
+            "- Calcule mon indemnite pour 3000 euros et 5 ans d anciennete\n"
+            "- Quelles sont les regles sur le harcelement moral ?\n\n"
             "Posez votre question !"
         )
     ).send()
@@ -29,17 +33,31 @@ async def on_message(message: cl.Message):
     route = classify_query(query)
 
     if route == "rag":
-        async with cl.Step(name="Recherche dans le Code du Travail..."):
+        async with cl.Step(name="Recherche dans le Code du Travail...") as step:
             vectorstore = load_vectorstore()
             retriever = get_retriever(vectorstore)
+            docs = retriever.invoke(query)
             reponse = ask_rag(query, retriever)
 
+            sources = "\n".join([
+                f"- {doc.metadata.get('source', '?').split('/')[-1]}"
+                f" (page {doc.metadata.get('page', '?')})"
+                for doc in docs
+            ])
+            step.output = f"Sources consultees :\n{sources}"
+
+        await cl.Message(content=reponse).send()
+
     elif route == "tool":
-        async with cl.Step(name="Utilisation des outils..."):
+        async with cl.Step(name="Utilisation des outils...") as step:
             reponse = ask_agent_with_memory(query, thread_id=thread_id)
+            step.output = "Calcul ou recherche effectue"
+
+        await cl.Message(content=reponse).send()
 
     else:
-        async with cl.Step(name="Réflexion..."):
+        async with cl.Step(name="Reflexion...") as step:
             reponse = ask_agent_with_memory(query, thread_id=thread_id)
+            step.output = "Reponse generee"
 
-    await cl.Message(content=reponse).send()
+        await cl.Message(content=reponse).send()
