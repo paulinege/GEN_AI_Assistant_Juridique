@@ -1,17 +1,15 @@
-# --- Framework Agent & LLM ---
-langchain
-langchain-openai
-langchain-community
+# Cœur du projet
+langchain==0.1.20
+langchain-community==0.0.38
+langchain-openai==0.1.7
+chainlit==2.11.0
 
-# --- Interface & Serveur ---
-chainlit
+# Compatibilité et Outils
+pydantic<2.0.0
+python-dotenv==1.2.2
+tavily-python==0.7.23
 
-# --- Base de données vectorielle & RAG ---
-chromadb
-pypdf
+# Base de données et Documents
+chromadb==1.5.7
+pypdf==6.10.0
 tiktoken
-
-# --- Utilitaires pour les outils ---
-requests
-tavily-python
-python-dotenv
