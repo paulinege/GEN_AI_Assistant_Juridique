@@ -96,8 +96,8 @@ cp .env.example .env
 
 ### 5. Ajouter les PDFs du Code du Travail
 
-Déposer vos fichiers `.pdf` dans le dossier `data/`.  
-Source recommandée : [Légifrance](https://www.legifrance.gouv.fr)
+Déposer le fichier PDF du Code du Travail dans son drive : https://www.legifrance.gouv.fr/download/pdf/legiOrKali?id=LEGITEXT000006072050.pdf&size=7,2%20Mo&pathToFile=/LEGI/TEXT/00/00/06/07/20/50/LEGITEXT000006072050/LEGITEXT000006072050.pdf&title=Code%20du%20travail
+Suivre le path : Mon Drive/GEN_AI_Assistant_Juridique/data/
 
 ---
 
@@ -156,11 +156,9 @@ os.environ["OPENAI_API_KEY"] = userdata.get('OPENAI_API_KEY')
 ## 👥 Équipe
 
 | Membre | Branche | Responsabilité |
-|---|---|---|
-| Membre 1 | `feature/partie1-rag` | Chargement PDFs + vectorisation |
-| Membre 2 | `feature/partie2-agents` | Agents & outils |
-| Membre 3 | `feature/partie3-interface` | Routeur + Chainlit + mémoire |
-
+| Pauline | `feature/partie1-rag` | Chargement PDFs + vectorisation |
+| Peraveena | `feature/partie2-agents` | Agents & outils |
+| Fadimatou | `feature/partie3-interface` | Routeur + Chainlit + mémoire |
 ---
 
 ## 📝 Exemples de questions
