@@ -1,8 +1,9 @@
 import chainlit as cl
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 from src.tools import build_tools
+import re
 
 @cl.on_chat_start
 async def start():
@@ -14,7 +15,7 @@ async def start():
     # 2. Récupération des outils
     tools = build_tools()
     
-    # 3. Création de l'Agent (LangGraph gère le prompt automatiquement)
+    # 3. Création de l'Agent
     agent = create_react_agent(llm, tools)
     
     # Stockage dans la session Chainlit
@@ -35,37 +36,43 @@ async def main(message: cl.Message):
     
     # Appel de l'agent
     try:
-        # Appel de l'agent
         res = await agent.ainvoke(
             {"messages": chat_history},
             config={"callbacks": [cl.LangchainCallbackHandler()]}
         )
         
-        # 1. Récupérer les messages de l'agent
-        messages = res["messages"]
-        output = messages[-1].content
-        
-        # 2. Extraction des sources (cherche dans les messages des outils)
-        source_elements = []
-        found_sources = set()
+        # 1. On récupère la réponse finale brute du LLM
+        final_answer = res["messages"][-1].content
+        sources_text = ""
 
-        for msg in messages:
-            # On cherche les messages venant des outils (qui contiennent les documents)
-            if hasattr(msg, "content") and "Source:" in msg.content:
-                # Cette logique dépend de comment votre outil 'src.tools' formate son texte
-                found_sources.add(msg.content)
+        # 2. On cherche les sources dans les messages précédents (ceux des outils)
+        # On parcourt l'historique à l'envers pour trouver l'outil qui a répondu en dernier
+        for msg in reversed(res["messages"]):
+            if isinstance(msg, ToolMessage) and "📚 SOURCES UTILISÉES :" in msg.content:
+                parts = msg.content.split("📚 SOURCES UTILISÉES :")
+                if len(parts) > 1:
+                    sources_text = parts[1].strip()
+                break  # On a trouvé, on arrête de chercher
 
-        # Création d'éléments visuels dans Chainlit
-        if found_sources:
-            for i, content in enumerate(found_sources):
-                source_elements.append(cl.Text(name=f"Document {i+1}", content=content, display="side"))
+        # 3. Nettoyage : Si par hasard le LLM a quand même recopié les sources, 
+        # on les enlève pour ne pas les avoir en double
+        response_clean = final_answer.split("📚 SOURCES UTILISÉES :")[0].strip()
 
-        # Mettre à jour l'historique
-        chat_history.append(AIMessage(content=output))
+        # 4. Mettre à jour l'historique de session
+        chat_history.append(AIMessage(content=response_clean))
         cl.user_session.set("chat_history", chat_history)
         
-        # 3. Envoi de la réponse avec les éléments de source
-        await cl.Message(content=output, elements=source_elements).send()
+        # On prépare l'élément visuel pour les sources
+        elements = [
+            cl.Text(name="Sources utilisées", content=sources_text, display="inline")
+        ] if sources_text else []
+
+        # On envoie un seul message avec la réponse ET les sources attachées
+        await cl.Message(
+            content=response_clean,
+            elements=elements
+        ).send()
         
     except Exception as e:
+        print(f"Erreur détaillée : {str(e)}")
         await cl.Message(content=f"Erreur : {str(e)}").send()
