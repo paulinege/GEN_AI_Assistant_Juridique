@@ -8,8 +8,10 @@ basées sur les textes du Code du Travail français.
 Projet réalisé dans le cadre du cours IA Générative — Architecture RAG + Agents.  
 Le système permet de :
 - Répondre à des questions basées sur les PDFs du Code du Travail (RAG)
-- Effectuer des calculs juridiques (indemnités, préavis…) via des agents
+- Effectuer des calculs juridiques (indemnités, préavis…) via un agent calculatrice
 - Rechercher de la jurisprudence récente sur le web
+- Répondre à des questions sur la météo actuelle
+- Suivre l'établissement d'une todo list
 - Maintenir une conversation contextuelle avec mémoire
 
 ---
@@ -35,29 +37,37 @@ travail) web…)
 ## 📁 Structure du projet
 
 ```
-assistant-juridique-rag/
-├── data/                        # PDFs du Code du Travail
-│   └── .gitkeep
-├── notebooks/                   # Développement itératif (Colab/Jupyter)
-│   ├── 01_chargement_docs.ipynb
-│   ├── 02_splitting.ipynb
-│   ├── 03_vectorstore.ipynb
-│   ├── 04_retrieval.ipynb
-│   ├── 05_agents.ipynb
-│   └── 06_chat_final.ipynb
-├── src/                         # Code Python production
-│   ├── rag_pipeline.py          # Ingestion + retrieval
-│   ├── agents.py                # Outils et agents
-│   ├── router.py                # Routage RAG / Agent / LLM
-│   └── app.py                   # Interface Chainlit
-├── chroma_db/                   # Index vectoriel persisté (ignoré par git)
-│   └── .gitkeep
-├── tests/                       # Tests unitaires
-│   └── test_rag.py
-├── .env.example                 # Template variables d'environnement
+GEN_AI_Assistant_Juridique/
+├── data/                        
+│   ├── Contrat_de_travail.pdf
+│   ├── Salaires_avantages.pdf
+│   ├── Fin_de_contrat.pdf
+│   ├── Harcelement.pdf
+│   ├── Syndicats.pdf
+│   ├── Egalites_professionnelles.pdf
+│   └── sécurité_au_travail.pdf
+├── notebooks/                   
+│   ├── 01_chargement_docs.ipynb  
+│   ├── 02_RAG.ipynb              
+│   ├── 02_agents_tool.ipynb      
+│   └── 03_langchain.ipynb        
+├── src/                         
+│   ├── __init__.py
+│   ├── agent.py                 
+│   ├── config.py                
+│   ├── rag_pipeline.py          
+│   ├── router.py                
+│   ├── schemas.py               
+│   └── tools.py                 
+├── tests/                       
+├── app.py                       
+├── init_rag.py                  
+├── .env.example                 
 ├── .gitignore
-├── requirements.txt
-└── README.md
+├── LICENSE
+├── pytest.ini
+├── README.md
+└── requirements.txt
 ```
 
 ---
@@ -92,13 +102,6 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Éditer .env et ajouter votre clé OpenAI
-```
-
-### 5. Ajouter les PDFs du Code du Travail
-
-Déposer le fichier PDF du Code du Travail dans son drive : https://www.legifrance.gouv.fr/download/pdf/legiOrKali?id=LEGITEXT000006072050.pdf&size=7,2%20Mo&pathToFile=/LEGI/TEXT/00/00/06/07/20/50/LEGITEXT000006072050/LEGITEXT000006072050.pdf&title=Code%20du%20travail
-Suivre le path : Mon Drive/GEN_AI_Assistant_Juridique/data/
-
 ---
 
 ## ▶️ Lancement
@@ -106,7 +109,7 @@ Suivre le path : Mon Drive/GEN_AI_Assistant_Juridique/data/
 ### Interface Chainlit
 
 ```bash
-chainlit run src/app.py -w
+python -m chainlit run app.py -w
 ```
 
 Puis ouvrir : `http://localhost:8000`
@@ -133,6 +136,8 @@ os.environ["OPENAI_API_KEY"] = userdata.get('OPENAI_API_KEY')
 | Chargement PDF | PyPDFLoader |
 | Agents | LangChain Agents |
 | Interface | Chainlit |
+| Recherche web | Tavily |
+| Météo | OpenWeather API |
 
 ---
 
@@ -140,30 +145,7 @@ os.environ["OPENAI_API_KEY"] = userdata.get('OPENAI_API_KEY')
 
 1. **Calculatrice juridique** — calcul d'indemnités, préavis, ancienneté
 2. **Recherche web** — jurisprudence récente via Tavily/DuckDuckGo
-3. **Calendrier légal** — calcul de délais légaux (rupture, congés…)
-
+3. **Météo** 
+4. **Date du jour**
+5. **Todo List**
 ---
-
-## 📋 Livrables (sujet prof)
-
-- [x] Partie 1 — Pipeline RAG (ingestion, vectorisation, retrieval)
-- [x] Partie 2 — Agents & outils (≥ 3 outils)
-- [x] Partie 3 — Routage intelligent RAG / Agent / LLM
-- [x] Partie 4 — Mémoire conversationnelle + interface Chainlit
-
----
-
-## 👥 Équipe
-
-| Membre | Branche | Responsabilité |
-| Pauline | `feature/partie1-rag` | Chargement PDFs + vectorisation |
-| Peraveena | `feature/partie2-agents` | Agents & outils |
-| Fadimatou | `feature/partie3-interface` | Routeur + Chainlit + mémoire |
----
-
-## 📝 Exemples de questions
-
-> *"Quel est le délai de préavis pour un CDI après 3 ans d'ancienneté ?"*  
-> *"Quelles sont les conditions d'un licenciement pour faute grave ?"*  
-> *"Calcule l'indemnité de licenciement pour un salaire de 2500€ et 5 ans d'ancienneté."*  
-> *"Quelle est la durée maximale légale du travail hebdomadaire ?"*
