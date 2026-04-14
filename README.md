@@ -144,7 +144,7 @@ os.environ["OPENAI_API_KEY"] = userdata.get('OPENAI_API_KEY')
 ## 🔧 Outils agents intégrés
 
 1. **Calculatrice juridique** — calcul d'indemnités, préavis, ancienneté
-2. **Recherche web** — jurisprudence récente via Tavily/DuckDuckGo
+2. **Recherche web** — jurisprudence récente via Tavily
 3. **Météo** 
 4. **Date du jour**
 5. **Todo List**
