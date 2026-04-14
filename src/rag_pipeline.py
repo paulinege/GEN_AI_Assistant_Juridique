@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -59,7 +60,7 @@ def get_retriever(vectorstore, k=4):
     return vectorstore.as_retriever(search_kwargs={"k": k})
 
 def ask_rag(question: str, retriever) -> str:
-    """Pose une question au pipeline RAG avec citations"""
+    """Pose une question au pipeline RAG avec citations cliquables"""
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
     prompt = ChatPromptTemplate.from_messages([
         ("system", """Tu es un assistant juridique expert en droit du travail français.
@@ -72,41 +73,39 @@ Extraits du Code du Travail :
         ("human", "{question}")
     ])
     
-    # Récupérer les documents pertinents
+    # 1. Récupérer les documents pertinents
     docs = retriever.invoke(question)
-    print(f"DEBUG: {len(docs)} documents trouvés")
-    for i, doc in enumerate(docs):
-        print(f"DEBUG Doc {i}: metadata={doc.metadata}")
-    
     context = "\n\n".join([d.page_content for d in docs])
     
-    # Générer la réponse
+    # 2. Générer la réponse
     chain = prompt | llm | StrOutputParser()
     response = chain.invoke({"context": context, "question": question})
     
-    # Extraire et formater les sources
-    sources_set = set()
+    # 3. EXTRAIRE ET FORMATER LES SOURCES
+    sources_data = []
+    seen_sources = set()
+
     for doc in docs:
-        source = doc.metadata.get("source", "Document")
-        page = doc.metadata.get("page", "N/A")
+        source_path = doc.metadata.get("source", "Document")
+        filename = Path(source_path).name
+        page = doc.metadata.get("page", 0) + 1 # +1 car PyPDFLoader commence à 0
         
-        # Extraire juste le nom du fichier
-        if isinstance(source, str):
-            filename = Path(source).name
-        else:
-            filename = "Document"
+        source_id = f"Page {page} - {filename}"
         
-        sources_set.add(f"Page {page} - {filename}")
+        if source_id not in seen_sources:
+            # On stocke le titre ET le contenu texte pour l'affichage latéral
+            sources_data.append({
+                "title": source_id,
+                "content": doc.page_content 
+            })
+            seen_sources.add(source_id)
     
-    # Ajouter les sources à la réponse (format qui ne sera pas reformulé)
-    if sources_set:
-        sources_list = sorted(list(sources_set))
-        sources_text = "\n".join(f"- {s}" for s in sources_list)
-        final_response = f"{response}\n\n📚 SOURCES UTILISÉES :\n{sources_text}"
-        print(f"DEBUG: Réponse avec sources:\n{final_response}")
+    # 4. On renvoie la réponse + les données JSON des sources
+    if sources_data:
+        sources_json = json.dumps(sources_data)
+        final_response = f"{response}\n\n📚 SOURCES UTILISÉES :\n{sources_json}"
         return final_response
     
-    print(f"DEBUG: Pas de sources trouvées")
     return response
 
 vectorstore_instance = load_vectorstore()
