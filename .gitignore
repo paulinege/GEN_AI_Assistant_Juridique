@@ -1,31 +1,33 @@
-# Environnement Python
+# Environnement Python (Dossier des bibliothèques)
 .venv/
+env/
+venv/
 __pycache__/
 *.py[cod]
-*.egg-info/
-dist/
-build/
 
-# Variables d'environnement — NE JAMAIS COMMITTER
+# Fichiers Chainlit / Config
+.chainlit/
+chainlit.md
+config.toml
+todo_juridique.json
+uninstall.txt
+
+# --- SÉCURITÉ CRITIQUE : NE JAMAIS COMMITTER ---
 .env
+.env.*
+# -----------------------------------------------
 
-# Index vectoriel ChromaDB (lourd, regénérable)
+# Index vectoriel (Lourd et spécifique à ta machine)
 chroma_db/
 faiss_store/
 faiss.index
 faiss.index.meta.json
 
-# Données sensibles / PDFs (optionnel selon taille)
+# Données (PDFs locaux)
 # data/*.pdf
 
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb_checkpoints
-
-# IDE
+# IDE et Système
 .vscode/
 .idea/
 *.DS_Store
-
-# Logs
 *.log
