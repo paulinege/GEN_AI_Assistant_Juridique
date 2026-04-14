@@ -7,6 +7,9 @@ from langgraph.prebuilt import create_react_agent
 from src.tools import build_tools
 import json
 
+# --- IMPORT POUR LA RECHERCHE WEB (PARTIE 4) ---
+from langchain_community.tools.tavily_search import TavilySearchResults
+
 # --- Monte le dossier 'data' comme fichiers statiques accessibles via /data/<file>
 # Exécuter une seule fois au démarrage
 if os.path.isdir("data"):
@@ -27,51 +30,66 @@ def build_sources_from_files(sources_list_from_agent=None):
 
     for src in sources_list_from_agent:
         title = src.get("title", "Source")
-        # Priorité : url fournie par l'agent
+        # Priorité : url fournie par l'agent (ex: lien web renvoyé par Tavily)
         url = src.get("url")
-        # Si l'agent a donné un nom de fichier correspondant à data/, on construit l'URL
+        
+        # Si l'agent a donné un nom de fichier correspondant à data/, on construit l'URL locale
         filename = src.get("filename") or src.get("file") or src.get("path")
         if not url and filename:
             # sécuriser le nom de fichier
             filename = os.path.basename(filename)
             if os.path.exists(os.path.join("data", filename)):
                 url = f"/data/{filename}"
+                
         # Si aucune url trouvée, on peut inclure le contenu inline (optionnel)
         results.append({"title": title, "url": url, "content": src.get("content", "")})
     return results
 
 @cl.on_chat_start
 async def start():
+    # Initialisation du LLM
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0, streaming=True)
-    tools = build_tools()
+    
+    # --- CHARGEMENT DES OUTILS ---
+    internal_tools = build_tools() # Outils de la Partie 2 (RAG)
+    web_search_tool = TavilySearchResults(max_results=3) # Outil Web de la Partie 4
+    
+    # Combinaison de tous les outils
+    tools = internal_tools + [web_search_tool]
+    
+    # Création de l'agent
     agent = create_react_agent(llm, tools)
+    
+    # Initialisation des variables de session (Mémoire)
     cl.user_session.set("agent", agent)
     cl.user_session.set("chat_history", [])
     cl.user_session.set("pending_sources", None)
+    
     await cl.Message(content="Bonjour ! Je suis votre assistant juridique. Comment puis-je vous aider aujourd'hui ?").send()
 
 @cl.on_message
 async def main(message: cl.Message):
     text = message.content.strip()
 
-    # --- Gestion d'un clic sur un bouton qui renvoie une URL (si vous utilisez cl.Button)
-    # Si le message reçu est une URL vers /data/..., on renvoie un message avec le lien (ou on laisse le navigateur ouvrir)
+    # --- Gestion d'un clic sur un bouton qui renvoie une URL
     if text.startswith("/data/") or text.startswith("http://") or text.startswith("https://"):
-        # On renvoie un message confirmant l'ouverture (optionnel)
-        await cl.Message(content=f"Ouvrir la ressource : {text}").send()
+        await cl.Message(content=f"Ouverture du lien demandée : {text}").send()
         return
 
+    # Récupération de l'agent et de l'historique
     agent = cl.user_session.get("agent")
     chat_history = cl.user_session.get("chat_history", [])
+    
+    # Ajout du message utilisateur à la mémoire
     chat_history.append(HumanMessage(content=text))
 
     try:
-        # Appel de l'agent
+        # Appel de l'agent avec l'historique complet
         res = await agent.ainvoke({"messages": chat_history})
         final_answer = res["messages"][-1].content
         sources_list = []
 
-        # Extraction du JSON des sources si présent (votre logique existante)
+        # Extraction du JSON des sources si présent
         for msg in reversed(res["messages"]):
             if isinstance(msg, ToolMessage) and "📚 SOURCES UTILISÉES :" in msg.content:
                 parts = msg.content.split("📚 SOURCES UTILISÉES :")
@@ -82,41 +100,41 @@ async def main(message: cl.Message):
                         sources_list = []
                 break
 
+        # Nettoyage de la réponse principale (on retire le bloc JSON)
         response_clean = final_answer.split("📚 SOURCES UTILISÉES :")[0].strip()
 
-        # Envoi de la réponse principale
+        # 1. Envoi de la réponse textuelle principale
         await cl.Message(content=response_clean).send()
 
-        # Construire la liste de sources enrichie (ajoute les URLs /data/<file> si possible)
+        # 2. Construction et envoi des sources (Évite l'ouverture du panneau latéral)
         enriched = build_sources_from_files(sources_list)
 
-        # Si on a des URLs, envoyer des liens cliquables Markdown (n'ouvre pas la sidebar)
         if enriched:
-            # Construire la liste Markdown
             md_lines = []
             for src in enriched:
                 title = src["title"]
                 url = src.get("url")
                 if url:
-                    # lien cliquable qui ouvrira le PDF dans un nouvel onglet
+                    # Lien cliquable (Web ou PDF local)
                     md_lines.append(f"- [{title}]({url})")
                 else:
-                    # pas d'URL : afficher titre et (optionnellement) extrait
+                    # Affichage d'un aperçu si pas d'URL
                     content_preview = src.get("content", "")
                     preview = content_preview[:400].replace("\n", " ") if content_preview else "Aucun aperçu disponible."
                     md_lines.append(f"- **{title}** — {preview}")
 
+            # Envoi des sources dans un second message séparé
             await cl.Message(content="**Sources consultées :**\n\n" + "\n".join(md_lines)).send()
-
-            # Stocker en session si vous voulez un affichage ultérieur via boutons
+            
             cl.user_session.set("pending_sources", enriched)
         else:
             cl.user_session.set("pending_sources", None)
 
-        # Mise à jour historique
+        # Mise à jour de l'historique avec la réponse de l'assistant
         chat_history.append(AIMessage(content=response_clean))
         cl.user_session.set("chat_history", chat_history)
 
+    # --- BLOC DE SÉCURITÉ (Corrige la SyntaxError) ---
     except Exception as e:
         print(f"Erreur : {e}")
-        await cl.Message(content=f"Erreur technique : {str(e)}").send()
+        await cl.Message(content=f"Une erreur technique est survenue : {str(e)}").send()
