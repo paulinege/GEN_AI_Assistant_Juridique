@@ -35,20 +35,37 @@ async def main(message: cl.Message):
     
     # Appel de l'agent
     try:
+        # Appel de l'agent
         res = await agent.ainvoke(
             {"messages": chat_history},
             config={"callbacks": [cl.LangchainCallbackHandler()]}
         )
         
-        # Extraire la réponse (dernier message de l'agent)
-        output = res["messages"][-1].content
+        # 1. Récupérer les messages de l'agent
+        messages = res["messages"]
+        output = messages[-1].content
         
+        # 2. Extraction des sources (cherche dans les messages des outils)
+        source_elements = []
+        found_sources = set()
+
+        for msg in messages:
+            # On cherche les messages venant des outils (qui contiennent les documents)
+            if hasattr(msg, "content") and "Source:" in msg.content:
+                # Cette logique dépend de comment votre outil 'src.tools' formate son texte
+                found_sources.add(msg.content)
+
+        # Création d'éléments visuels dans Chainlit
+        if found_sources:
+            for i, content in enumerate(found_sources):
+                source_elements.append(cl.Text(name=f"Document {i+1}", content=content, display="side"))
+
         # Mettre à jour l'historique
         chat_history.append(AIMessage(content=output))
         cl.user_session.set("chat_history", chat_history)
         
-        # Envoi de la réponse finale
-        await cl.Message(content=output).send()
+        # 3. Envoi de la réponse avec les éléments de source
+        await cl.Message(content=output, elements=source_elements).send()
         
     except Exception as e:
         await cl.Message(content=f"Erreur : {str(e)}").send()
